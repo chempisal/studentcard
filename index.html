@@ -224,6 +224,14 @@
     </style>
 </head>
 <body>
+<div id="splash-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #002060; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s;">
+    <h1 style="font-family: 'Khmer OS Muol Light'; font-size: 30px;">ប្រព័ន្ធគ្រប់គ្រងប័ណ្ណសិស្ស v8</h1>
+    <p style="font-size: 18px;">កំពុងផ្ទុកទិន្នន័យ...</p>
+    <div style="margin-top: 20px; width: 200px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; overflow: hidden;">
+        <div id="progress-bar" style="height: 100%; width: 0%; background: #ffc107; transition: width 5s linear;"></div>
+    </div>
+    <p style="margin-top: 15px; font-size: 14px;">បង្កើតដោយ៖ លោកគ្រូ ចែម ភាសាល បរិញ្ញាបត្រពត៌មានវិទ្យា IT</p>
+</div>
 
     <div class="control-panel">
         <h2 style="margin-top:0; color:#002060;">ប្រព័ន្ធគ្រប់គ្រងប័ណ្ណសិស្ស v8 (បំបែកថេបតាមថ្នាក់សិក្សា)</h2>
@@ -288,26 +296,25 @@
     <div class="print-container" id="cards-container"></div>
 
     <script>
-// ឧទាហរណ៍៖ ការទាញទិន្នន័យចេញពី Google Sheet
-function loadFromGoogleSheet() {
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyM7XoEOgaBom9Za2iCCgoIJOa5KC0H6xEPFyurOnpOb0-tubujfhX3ZmPDouGCDkGX/exec";
-    fetch(SCRIPT_URL)
-        .then(response => response.json())
-        .then(data => {
-            // បម្លែងទិន្នន័យពី array ទៅជា JSON object សម្រាប់ប្រើក្នុងកម្មវិធី
-            console.log(data);
-        });
-}
 
-// ឧទាហរណ៍៖ ការបញ្ជូនទិន្នន័យទៅ Google Sheet
-function saveToGoogleSheet(student) {
-    const SCRIPT_URL = "ដាក់_URL_ដែលបានពី_Deploy_នៅទីនេះ";
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(student)
-    });
-}
-        
+window.addEventListener('load', function() {
+    const splash = document.getElementById('splash-screen');
+    const progressBar = document.getElementById('progress-bar');
+    
+    // ចាប់ផ្តើមរត់ Progress Bar
+    setTimeout(() => {
+        progressBar.style.width = '100%';
+    }, 100);
+
+    // បិទ Splash Screen បន្ទាប់ពី ៥ វិនាទី
+    setTimeout(() => {
+        splash.style.opacity = '0';
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 500);
+    }, 5000);
+});
+
         let globalSignDate = "សុភ័ណ្ឌវ័ន្ត, ថ្ងៃទី២៣ ខែមករា ឆ្នាំ២០២៦";
         let globalExpireDate = "១៥ កក្កដា ២០២៦";
         let currentLogoBase64 = "https://via.placeholder.com/50";
