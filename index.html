@@ -288,6 +288,26 @@
     <div class="print-container" id="cards-container"></div>
 
     <script>
+// ឧទាហរណ៍៖ ការទាញទិន្នន័យចេញពី Google Sheet
+function loadFromGoogleSheet() {
+    const SCRIPT_URL = "ដាក់_URL_ដែលបានពី_Deploy_នៅទីនេះ";
+    fetch(SCRIPT_URL)
+        .then(response => response.json())
+        .then(data => {
+            // បម្លែងទិន្នន័យពី array ទៅជា JSON object សម្រាប់ប្រើក្នុងកម្មវិធី
+            console.log(data);
+        });
+}
+
+// ឧទាហរណ៍៖ ការបញ្ជូនទិន្នន័យទៅ Google Sheet
+function saveToGoogleSheet(student) {
+    const SCRIPT_URL = "ដាក់_URL_ដែលបានពី_Deploy_នៅទីនេះ";
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(student)
+    });
+}
+        
         let globalSignDate = "សុភ័ណ្ឌវ័ន្ត, ថ្ងៃទី២៣ ខែមករា ឆ្នាំ២០២៦";
         let globalExpireDate = "១៥ កក្កដា ២០២៦";
         let currentLogoBase64 = "https://via.placeholder.com/50";
