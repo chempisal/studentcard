@@ -366,15 +366,7 @@ async function saveToGoogleSheet(studentData) {
             });
         }
 
-        // ឧទាហរណ៍ក្នុងមុខងារ addNewStudent
-function addNewStudent() {
-    let newStudent = { id: "", name: "", gender: "", ... };
-    studentsData.push(newStudent);
-    
-    // បញ្ជូនទៅ Google Sheet
-    saveToGoogleSheet(newStudent); 
-    
-    updateView();
+       
 }
         function updateView() {
             renderTabs();
