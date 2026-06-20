@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធបង្កើតប័ណ្ណសម្គាល់ខ្លួនសិស្ស v8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Khmer+OS+Muol+Light&family=Khmer+OS+Siemreap&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #002060;
+            --secondary-color: #ff0000;
+            --bg-image: none;
+            --bg-size: 100%;
+            --bg-pos-x: 0px;
+            --bg-pos-y: 0px;
+        }
+        body {
+            font-family: 'Khmer OS Siemreap', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            max-width: 1150px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn {
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Khmer OS Siemreap';
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+        .btn-print { background-color: #28a745; }
+        .btn-print:hover { background-color: #218838; }
+        .btn-export { background-color: #17a2b8; }
+        .btn-export:hover { background-color: #138496; }
+        .btn-import { background-color: #ffc107; color: #212529; }
+        .btn-import:hover { background-color: #e0a800; }
+        .btn-add { background-color: #007bff; }
+        .btn-add:hover { background-color: #0069d9; }
+        .btn-danger { background-color: #dc3545; padding: 4px 8px; font-size: 12px;}
+        .btn-danger:hover { background-color: #bd2130; }
+        .btn-secondary { background-color: #6c757d; }
+
+        /* Tabs Style */
+        .tabs-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+        .tab-btn {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 8px 16px;
+            border: 1px solid #ced4da;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-family: 'Khmer OS Siemreap';
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { background-color: #dee2e6; }
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .table-responsive {
+            margin-top: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+        .student-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .student-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .student-table tr:hover { background-color: #f8f9fa; }
+        .table-input {
+            width: 100%;
+            border: 1px solid transparent;
+            padding: 4px;
+            font-family: 'Khmer OS Siemreap';
+            font-size: 13px;
+            box-sizing: border-box;
+            background: transparent;
+        }
+        .table-input:focus {
+            border-color: #80bdff;
+            background: white;
+            outline: none;
+        }
+
+        /* Printing Canvas Setup */
+        .print-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10px;
+            background: white;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        .id-card {
+            width: 95mm;
+            height: 135mm;
+            border: 3px solid #0000ff;
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+            background-color: #fff;
+            background-image: var(--bg-image);
+            background-size: var(--bg-size);
+            background-position: var(--bg-pos-x) var(--bg-pos-y);
+            background-repeat: no-repeat;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        .card-inner-border {
+            border: 1px solid #0000ff;
+            height: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .header-kh {
+            font-family: 'Khmer OS Muol Light';
+            font-size: 11px;
+            color: var(--primary-color);
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 2px;
+        }
+        .school-section {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-top: 5px;
+            border-bottom: 2px solid #0000ff;
+            padding-bottom: 5px;
+        }
+        .school-logo { width: 45px; height: 45px; object-fit: contain; background: white;}
+        .school-name { font-family: 'Khmer OS Muol Light'; font-size: 12px; color: #0070c0; margin-left: 10px; flex-grow: 1; }
+        .card-title { font-family: 'Khmer OS Muol Light'; font-size: 14px; color: var(--secondary-color); margin-top: 8px; text-shadow: 0.5px 0.5px 0px #000;}
+        
+        .content-table { width: 100%; margin-top: 5px; font-size: 11px; color: #000; border-collapse: collapse; }
+        .content-table td { padding: 2px 0; vertical-align: top; }
+        .label-red { color: var(--secondary-color); font-weight: bold; }
+        .label-blue { color: var(--primary-color); }
+
+        .footer-section { display: flex; justify-content: space-between; width: 100%; margin-top: auto; padding-bottom: 5px; }
+        .photo-box {
+            width: 3cm; height: 4cm; border: 1px dashed #0000ff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 9px; color: #777; position: relative;
+            background-size: cover; background-position: center;
+            background-color: white;
+        }
+        .photo-box input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .signature-box { text-align: center; font-size: 10px; color: var(--primary-color); width: 55%; }
+        .date-print { font-size: 8px; color: var(--primary-color); position: absolute; bottom: 2px; left: 15px; }
+
+        .global-settings {
+            display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;
+            background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef;
+        }
+        .setting-group { display: flex; flex-direction: column; gap: 5px; }
+        .setting-group label { font-size: 13px; font-weight: bold; color: #333;}
+        .setting-group input[type="text"], .setting-group input[type="file"] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Khmer OS Siemreap'; font-size: 13px;}
+        
+        .slider-control { display: flex; align-items: center; gap: 10px; font-size: 12px; background: #eef2f7; padding: 5px 10px; border-radius: 4px; margin-top: 5px;}
+        .slider-control input { width: 80px; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .control-panel { display: none; }
+            .print-container { margin: 0; padding: 0; border: none; display: grid !important; }
+            .photo-box { border: 1px solid #0000ff; }
+            .card-inner-border { background: rgba(255, 255, 255, 0.2) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            input[type="file"] { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <h2 style="margin-top:0; color:#002060;">ប្រព័ន្ធគ្រប់គ្រងប័ណ្ណសិស្ស v8 (បំបែកថេបតាមថ្នាក់សិក្សា)</h2>
+        
+        <div class="global-settings">
+            <div class="setting-group">
+                <label>ប្តូរ Logo សាលារួម</label>
+                <input type="file" id="global-logo-input" accept="image/*" onchange="changeGlobalLogo(this)">
+            </div>
+            <div class="setting-group" style="flex-grow: 1;">
+                <label>ថ្ងៃខែឆ្នាំចេញកាត (រួម)</label>
+                <input type="text" id="global-sign-input" value="សុភ័ណ្ឌវ័ន្ត, ថ្ងៃទី២៣ ខែមករា ឆ្នាំ២០២៦" oninput="updateGlobalSignDate(this.value)">
+            </div>
+            <div class="setting-group">
+                <label>ថ្ងៃផុតកំណត់ (រួម)</label>
+                <input type="text" id="global-expire-input" value="១៥ កក្កដា ២០២៦" oninput="updateGlobalExpireDate(this.value)">
+            </div>
+            
+            <div class="setting-group" style="width: 100%; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 5px;">
+                <label style="color: #007bff;">🌄 រូបភាពផ្ទៃខាងក្រោយកាត (Card Background)</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                    <input type="file" id="bg-file-input" accept="image/*" onchange="changeGlobalBackground(this)">
+                    <div class="slider-control"><span>ទំហំ %:</span><input type="range" id="slider-size" min="50" max="300" value="100" oninput="adjustBackground()"><span id="val-size">100%</span></div>
+                    <div class="slider-control"><span>ឆ្វេង-ស្តាំ:</span><input type="range" id="slider-x" min="-200" max="200" value="0" oninput="adjustBackground()"><span id="val-x">0px</span></div>
+                    <div class="slider-control"><span>លើ-ក្រោម:</span><input type="range" id="slider-y" min="-200" max="200" value="0" oninput="adjustBackground()"><span id="val-y">0px</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <button class="btn btn-add" onclick="addNewStudent()">➕ បន្ថែមសិស្សក្នុងថ្នាក់នេះ</button>
+            <button class="btn btn-secondary" onclick="addNewClass()">🏫 បន្ថែមថ្នាក់ថ្មី</button>
+            <button class="btn btn-import" onclick="document.getElementById('excel-file').click()">📥 Import Excel (គ្រប់ថ្នាក់)</button>
+            <input type="file" id="excel-file" accept=".xlsx, .xls" style="display: none;" onchange="importFromExcel(event)">
+            <button class="btn btn-export" onclick="exportToExcel()">📤 Export Excel (គ្រប់ថ្នាក់)</button>
+            <button class="btn btn-print" onclick="window.print()">🖨️ បោះពុម្ពប័ណ្ណថ្នាក់នេះ (Print A4)</button>
+        </div>
+
+        <div class="tabs-container" id="class-tabs">
+            </div>
+
+        <div class="table-responsive">
+            <table class="student-table">
+                <thead>
+                    <tr>
+                        <th width="8%">អត្តលេខ</th>
+                        <th width="15%">គោត្តនាម-នាម</th>
+                        <th width="7%">ភេទ</th>
+                        <th width="14%">ថ្ងៃខែឆ្នាំកំណើត (dd-mm-yyyy)</th>
+                        <th width="20%">ទីកន្លែងកំណើត</th>
+                        <th width="10%">ថ្នាក់ទី</th>
+                        <th width="10%">ឪពុក</th>
+                        <th width="10%">ម្តាយ</th>
+                        <th width="8%">សកម្មភាព</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="print-container" id="cards-container"></div>
+
+    <script>
+// ប្តូរ URL នេះទៅជា Web App URL ដែលលោកអ្នកទទួលបានពី Google Apps Script
+const API_URL = "https://script.google.com/macros/s/AKfycbx762TMLblzmG0KqpcuCnhBAKqQh8-IgsnMNhHuTdDpO5raa2k7K1C_T4Gqnbs8rAEq/exec";
+
+// មុខងារសម្រាប់រក្សាទុកទិន្នន័យទៅ Google Sheets
+async function saveToGoogleSheet(studentData) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // សំខាន់សម្រាប់ការភ្ជាប់ពី Browser
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(studentData)
+        });
+        console.log("បានរក្សាទុកទៅ Google Sheet ជោគជ័យ");
+    } catch (error) {
+        console.error("កំហុសក្នុងការតភ្ជាប់៖", error);
+    }
+}
+
+        let globalSignDate = "សុភ័ណ្ឌវ័ន្ត, ថ្ងៃទី២៣ ខែមករា ឆ្នាំ២០២៦";
+        let globalExpireDate = "១៥ កក្កដា ២០២៦";
+        let currentLogoBase64 = "https://via.placeholder.com/50";
+        
+        // រក្សាទុករូបថតដោយប្រើ Key រួមបញ្ចូលគ្នា៖ 'ថ្នាក់-អត្តលេខ'
+        let studentPhotos = {}; 
+
+        // បង្កើតថ្នាក់គំរូដំបូងចំនួន ១៦ ថ្នាក់ (ពីថ្នាក់ទី៧ ដល់ ទី១២)
+        let classesList = [
+            "៧A", "៧B", "៨A", "៨B", "៩A", "៩B", "៩C", "១០A", "១០B", "១១A", "១១B", "១១វិទ្យាសាស្ត្រ", "១២A", "១២B", "១២សង្គម", "១២វិទ្យាសាស្ត្រ"
+        ];
+        
+        // ថ្នាក់ដែលកំពុងមើលបច្ចុប្បន្ន
+        let currentClass = "៩B";
+
+        // ទិន្នន័យសិស្សគំរូ
+        let studentsData = [
+            { id: "00012", name: "ធី ម៉ារី", gender: "ស្រី", dob: "21-06-2011", pob: "ភូមិព្រែក-កំពង់ឆ្នាំង", father: "រដ្ឋា", mother: "សុភ័ណ្ឌ", grade: "៩B", school: "វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី" },
+            { id: "00013", name: "ធឿន ធារង្សី", gender: "ប្រុស", dob: "09-05-2011", pob: "ភូមិត្រពាំង-កំពង់ឆ្នាំង", father: "ហ៊ន", mother: "គីនីន", grade: "៩B", school: "វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី" },
+            { id: "00014", name: "នី ដានី", gender: "ស្រី", dob: "21-02-2010", pob: "ភូមិវត្ត-កំពង់ឆ្នាំង", father: "សាលី", mother: "ស្រី", grade: "៩A", school: "វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី" },
+            { id: "00015", name: "លី វាសនា", gender: "ប្រុស", dob: "15-08-2011", pob: "ភូមិថ្មី-កំពង់ឆ្នាំង", father: "សុខ", mother: "ចន្នី", grade: "៧A", school: "វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី" }
+        ];
+
+        function toKhmerNumber(numStr) {
+            if (!numStr) return "";
+            const khmerNumbers = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+            return numStr.toString().replace(/[0-9]/g, w => khmerNumbers[+w]);
+        }
+
+        function formatToDDMMYYYY(dateStr) {
+            if (!dateStr) return "";
+            let cleanStr = dateStr.toString().replace(/[\.\/\\_]/g, '-');
+            let parts = cleanStr.split('-');
+            if (parts.length === 3) {
+                let day = parts[0].trim().padStart(2, '0');
+                let month = parts[1].trim().padStart(2, '0');
+                let year = parts[2].trim();
+                if (year.length === 2) year = "20" + year; 
+                return `${day}-${month}-${year}`;
+            }
+            return dateStr;
+        }
+
+        // បង្ហាញគ្រាប់ចុច ថេប (Tabs) ទាំងអស់នៅលើអេក្រង់
+        function renderTabs() {
+            const tabsContainer = document.getElementById('class-tabs');
+            tabsContainer.innerHTML = "";
+
+            classesList.forEach(className => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${className === currentClass ? 'active' : ''}`;
+                btn.innerText = "ថ្នាក់ទី " + className;
+                btn.onclick = () => {
+                    currentClass = className;
+                    updateView();
+                };
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        // ឧទាហរណ៍ក្នុងមុខងារ addNewStudent
+function addNewStudent() {
+    let newStudent = { id: "", name: "", gender: "", ... };
+    studentsData.push(newStudent);
+    
+    // បញ្ជូនទៅ Google Sheet
+    saveToGoogleSheet(newStudent); 
+    
+    updateView();
+}
+        function updateView() {
+            renderTabs();
+            renderTable();
+            renderCards();
+        }
+
+        // បង្ហាញទិន្នន័យសិស្សក្នុងតារាង (ចម្រាញ់យកតែសិស្សក្នុងថ្នាក់បច្ចុប្បន្ន)
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = "";
+
+            studentsData.forEach((student, index) => {
+                if (student.grade !== currentClass) return; // បាំងសិស្សថ្នាក់ផ្សេង
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="table-input" value="${student.id}" oninput="updateField(${index}, 'id', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${student.name}" oninput="updateField(${index}, 'name', this.value)" style="font-weight:bold;"></td>
+                    <td><input type="text" class="table-input" value="${student.gender}" oninput="updateField(${index}, 'gender', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${student.dob}" oninput="updateField(${index}, 'dob', this.value)" onblur="formatDateOnBlur(${index}, this.value)" placeholder="ថ្ងៃ-ខែ-ឆ្នាំ"></td>
+                    <td><input type="text" class="table-input" value="${student.pob}" oninput="updateField(${index}, 'pob', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${student.grade}" oninput="updateField(${index}, 'grade', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${student.father}" oninput="updateField(${index}, 'father', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${student.mother}" oninput="updateField(${index}, 'mother', this.value)"></td>
+                    <td style="text-align:center;"><button class="btn btn-danger" onclick="deleteStudent(${index})">លុប</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // បង្ហាញសន្លឹកកាតសិស្ស (បង្ហាញតែថ្នាក់បច្ចុប្បន្ន)
+        function renderCards() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = "";
+
+            studentsData.forEach((student, index) => {
+                if (student.grade !== currentClass) return;
+
+                const photoKey = `${student.grade}-${student.id}`;
+                const photoStyle = studentPhotos[photoKey] ? `background-image: url('${studentPhotos[photoKey]}');` : '';
+                const photoSpanDisplay = studentPhotos[photoKey] ? 'display: none;' : '';
+                let formattedDOB = formatToDDMMYYYY(student.dob);
+
+                const cardHTML = `
+                    <div class="id-card">
+                        <div class="card-inner-border">
+                            <div class="header-kh">ព្រះរាជាណាចក្រកម្ពុជា<br>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
+                            <div class="school-section">
+                                <img src="${currentLogoBase64}" class="school-logo global-logo" alt="Logo">
+                                <div class="school-name">${student.school || 'វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី'}</div>
+                            </div>
+                            <div class="card-title">ប័ណ្ណសម្គាល់ខ្លួនសិស្ស</div>
+                            
+                            <table class="content-table">
+                                <tr><td width="35%" class="label-red">អត្តលេខ៖</td><td class="label-blue">${toKhmerNumber(student.id)}</td></tr>
+                                <tr><td class="label-red">ឆ្នាំសិក្សា៖</td><td class="label-blue">២០២៥-២០២៦</td></tr>
+                                <tr>
+                                    <td class="label-blue">គោត្តនាម និងនាម៖</td>
+                                    <td class="label-blue"><b>${student.name}</b> &nbsp; ភេទ: <span>${student.gender}</span></td>
+                                </tr>
+                                <tr><td class="label-blue">ថ្ងៃខែឆ្នាំកំណើត៖</td><td class="label-blue">${toKhmerNumber(formattedDOB)}</td></tr>
+                                <tr><td class="label-blue">ទីកន្លែងកំណើត៖</td><td class="label-blue">${student.pob}</td></tr>
+                                <tr>
+                                    <td class="label-blue">ឪពុកឈ្មោះ: <span>${student.father}</span></td>
+                                    <td class="label-blue">ម្តាយឈ្មោះ: <span>${student.mother}</span></td>
+                                </tr>
+                                <tr><td colspan="2" class="label-blue" style="text-align:center; padding-top:5px;">ជាសិស្សថ្នាក់ទី <b>${toKhmerNumber(student.grade)}</b></td></tr>
+                                <tr><td colspan="2" class="label-blue" style="text-align:center;">នៅ<b>${student.school || 'វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី'}</b></td></tr>
+                            </table>
+
+                            <div class="footer-section">
+                                <div class="photo-box" style="${photoStyle}">
+                                    <span style="${photoSpanDisplay}">ទំហំ ៤x៦</span>
+                                    <input type="file" accept="image/*" onchange="previewPhoto(event, '${photoKey}')">
+                                </div>
+                                <div class="signature-box">
+                                    <span class="global-sign-text">${globalSignDate}</span><br><br>
+                                    <b>ប្រធានអង្គភាព</b>
+                                </div>
+                            </div>
+                            <div class="date-print">ថ្ងៃផុតកំណត់៖ <span class="global-expire-text">${globalExpireDate}</span></div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function updateField(index, field, value) {
+            studentsData[index][field] = value;
+            // បើសិនជាអ្នកប្រើប្រាស់ប្តូរឈ្មោះថ្នាក់នៅក្នុងតារាង វានឹងរុញសិស្សនោះទៅថ្នាក់ថ្មីភ្លាម
+            if (field === 'grade') {
+                updateView();
+            } else {
+                renderCards();
+            }
+        }
+
+        function formatDateOnBlur(index, value) {
+            studentsData[index]['dob'] = formatToDDMMYYYY(value);
+            updateView();
+        }
+
+        function addNewStudent() {
+            studentsData.push({ id: "", name: "", gender: "", dob: "", pob: "", father: "", mother: "", grade: currentClass, school: "វិទ្យាល័យ ព្រះនរោត្តម សីហមុនី" });
+            updateView();
+        }
+
+        function addNewClass() {
+            let newClassName = prompt("សូមវាយបញ្ចូលឈ្មោះថ្នាក់ថ្មី (ឧទាហរណ៍: ៧C ឬ ១០A):");
+            if (newClassName) {
+                newClassName = newClassName.trim();
+                if (!classesList.includes(newClassName)) {
+                    classesList.push(newClassName);
+                    currentClass = newClassName;
+                    updateView();
+                } else {
+                    alert("ថ្នាក់នេះមានរួចរាល់ហើយ!");
+                }
+            }
+        }
+
+        function deleteStudent(index) {
+            if(confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យសិស្សនេះមែនទេ?")) {
+                const student = studentsData[index];
+                const photoKey = `${student.grade}-${student.id}`;
+                studentsData.splice(index, 1);
+                delete studentPhotos[photoKey];
+                updateView();
+            }
+        }
+
+        function previewPhoto(event, photoKey) {
+            const reader = new FileReader();
+            reader.onload = function(){
+                studentPhotos[photoKey] = reader.result;
+                renderCards();
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function changeGlobalBackground(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.documentElement.style.setProperty('--bg-image', `url('${e.target.result}')`);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function adjustBackground() {
+            const size = document.getElementById('slider-size').value;
+            const x = document.getElementById('slider-x').value;
+            const y = document.getElementById('slider-y').value;
+            document.getElementById('val-size').innerText = size + "%";
+            document.getElementById('val-x').innerText = x + "px";
+            document.getElementById('val-y').innerText = y + "px";
+            document.documentElement.style.setProperty('--bg-size', size + "%");
+            document.documentElement.style.setProperty('--bg-pos-x', x + "px");
+            document.documentElement.style.setProperty('--bg-pos-y', y + "px");
+        }
+
+        function updateGlobalSignDate(value) {
+            globalSignDate = value;
+            document.querySelectorAll('.global-sign-text').forEach(el => el.innerText = value);
+        }
+        function updateGlobalExpireDate(value) {
+            globalExpireDate = value;
+            document.querySelectorAll('.global-expire-text').forEach(el => el.innerText = value);
+        }
+        function changeGlobalLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentLogoBase64 = e.target.result;
+                    document.querySelectorAll('.global-logo').forEach(logo => logo.src = currentLogoBase64);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // EXPORT TO EXCEL: ទាញគ្រប់ថ្នាក់ទាំងអស់ចេញជាហ្វាលតែមួយ
+        function exportToExcel() {
+            const readyData = studentsData.map(st => ({ ...st, dob: formatToDDMMYYYY(st.dob) }));
+            const worksheet = XLSX.utils.json_to_sheet(readyData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ទិន្នន័យសិស្សគ្រប់ថ្នាក់");
+            XLSX.writeFile(workbook, "បញ្ជីឈ្មោះសិស្សសាលា_គ្រប់ថ្នាក់.xlsx");
+        }
+
+        // IMPORT FROM EXCEL: បញ្ចូលទិន្នន័យ និងបំបែកថ្នាក់ស្វ័យប្រវត្តិ
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const jsonRaw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                if(jsonRaw.length > 0) {
+                    studentsData = jsonRaw.map(st => ({ ...st, dob: st.dob ? formatToDDMMYYYY(st.dob) : "" }));
+                    
+                    // ពិនិត្យរកថ្នាក់ថ្មីៗដែលមានក្នុងហ្វាល Excel ដើម្បីបន្ថែមទៅក្នុង Tabs ស្វ័យប្រវត្តិ
+                    jsonRaw.forEach(st => {
+                        if (st.grade && !classesList.includes(st.grade.toString().trim())) {
+                            classesList.push(st.grade.toString().trim());
+                        }
+                    });
+                    
+                    studentPhotos = {}; 
+                    // កំណត់ឱ្យឈរលើថ្នាក់ដំបូងគេដែលមានក្នុងទិន្នន័យថ្មី
+                    if(jsonRaw[0].grade) currentClass = jsonRaw[0].grade.toString().trim();
+                    updateView();
+                    alert("បានបញ្ចូលទិន្នន័យសិស្សគ្រប់ថ្នាក់ពី Excel រួចរាល់!");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ដំណើរការបង្ហាញដំបូង
+        updateView();
+    </script>
+</body>
+</html>
